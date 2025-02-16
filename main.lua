@@ -1,5 +1,6 @@
 local file = io.open("./example.json", "r")
 local messageToBeSentString = file:read("*all")
+file:close()
 
 -- Break the message into smaller segments into a table and append the size of the message at the beginning
 local function preprocessUserMessage(string)
@@ -15,18 +16,18 @@ local function simulateRealSituation(string)
 	local message = preprocessUserMessage(string)
 	local messageTable = {}
 	local messageLength = string.len(message)
-	print("message Length is ", messageLength)
+	-- print("message Length is ", messageLength)
 	local messageEnd = messageLength
 	while messageLength > 0 do
 		local packetSize = math.min(math.random(1, messageLength), 20)
-		print("packet size is ", packetSize)
+		-- print("packet size is ", packetSize)
 		local startIndex = messageEnd - messageLength + 1
-		print("start index is ", startIndex)
+		-- print("start index is ", startIndex)
 		local packetString = string.sub(message, startIndex, startIndex + packetSize - 1)
-		print("packet string is", packetString)
+		-- print("packet string is", packetString)
 		table.insert(messageTable, packetString)
 		messageLength = messageLength - packetSize
-		print("new message length is ", messageLength)
+		-- print("new message length is ", messageLength)
 	end
 	return messageTable
 end
@@ -39,7 +40,7 @@ local function readerFunction(data)
 		table.insert(MessageBuffer, data)
 		local messageString = table.concat(MessageBuffer)
 		if string.len(messageString) < 16 then
-			print("not received enough data to determine message length")
+			-- print("not received enough data to determine message length")
 		else
 			local messageLength = string.sub(messageString, 1, 16)
 			-- print(
@@ -51,12 +52,36 @@ local function readerFunction(data)
 			if tonumber(messageLength) == tonumber(string.len(table.concat(MessageBuffer))) then
 				local message = table.concat(MessageBuffer)
 				message = string.sub(message, 17, tonumber(messageLength))
-				print(message)
+				-- print(message)
+				local json = vim.json.decode(message)
+				vim.fn.setreg('"0', json["content"])
+
 				MessageBuffer = {}
 			end
 		end
 	end
 end
+
+vim.api.nvim_create_autocmd("TextYankPost", {
+	callback = function()
+		local content = vim.fn.getreg('"')
+		content = vim.json.encode(content)
+		local timestamp = vim.uv.now()
+		local json = string.format(
+			[[
+{
+"content": %s,
+"timestamp": "%s"
+}
+		]],
+			content,
+			timestamp
+		)
+		file = io.open("./example.json", "w")
+		file:write(json)
+		file:close()
+	end,
+})
 
 for i in ipairs(messageTable) do
 	readerFunction(messageTable[i])

@@ -1,4 +1,5 @@
 {
-	"content": "Hei hvordan har du det idag, går det bra?, takk for at du spør ja det går greit, hvordan går det med deg? Det går bra med meg også takk for at du spør",
-	"timestamp": "2025-02-16 13:06"
+"content": "vim.api.nvim_create_autocmd(\"TextYankPost\", {\n\tcallback = function()\n\t\tlocal content = vim.fn.getreg('\"')\n\t\tcontent = vim.json.encode(content)\n\t\tlocal timestamp = vim.uv.now()\n\t\tlocal json = string.format(\n\t\t\t[[\n{\n\"content\": %s,\n\"timestamp\": \"%s\"\n}\n\t\t]],\n\t\t\tcontent,\n",
+"timestamp": "389761"
 }
+		
